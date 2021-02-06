@@ -1,4 +1,5 @@
 -- Copyright (c) 2017-2019 Florian Fischer. All rights reserved.
+-- Copyright (c) 2021 Matěj Cepl. All rights reserved.
 -- Use of this source code is governed by a MIT license found in the LICENSE file.
 
 local spellcheck = {}
@@ -26,11 +27,11 @@ spellcheck.typo_style = "fore:red"
 spellcheck.check_full_viewport = {}
 spellcheck.disable_syntax_awareness = false
 
-spellcheck.check_tokens = {
-	[vis.lexers.STRING] = true,
-	[vis.lexers.COMMENT] = true,
-	[vis.lexers.DEFAULT] = true,
-}
+-- spellcheck.check_tokens = {
+-- 	[vis.lexers.STRING] = true,
+-- 	[vis.lexers.COMMENT] = true,
+-- 	[vis.lexers.DEFAULT] = true,
+-- }
 
 -- Return nil or a string of misspelled word in a specific file range or text
 -- by calling the spellchecker's list command.
@@ -50,7 +51,7 @@ local function get_typos(range_or_text)
 		-- this error detection may need lua5.2
 		local success, reason, exit_code = proc:close()
 		if not success then
-			vis:info("calling " .. cmd .. " failed ("..exit_code..")")
+			print("calling " .. cmd .. " failed ("..exit_code..")")
 			return nil
 		end
 
@@ -63,7 +64,7 @@ local function get_typos(range_or_text)
 		local ret, so, se = vis:pipe(vis.win.file, range, cmd)
 
 		if ret ~= 0 then
-			vis:info("calling " .. cmd .. " failed ("..ret..")")
+			print("calling " .. cmd .. " failed ("..ret..")")
 			return nil
 		end
 		typos = so
@@ -129,7 +130,7 @@ local function typo_iter(text, typos, ignored)
 				end
 
 				if text:sub(start, finish) ~= typo then
-					vis:info(string.format("can't find typo %s after %d. Please report this bug.",
+					print(string.format("can't find typo %s after %d. Please report this bug.",
 										   typo, index))
 				end
 			-- our pettern [%A]typo[%A] found it
@@ -146,7 +147,8 @@ end
 
 local last_viewport, last_data, last_typos = nil, "", ""
 
-vis.events.subscribe(vis.events.WIN_HIGHLIGHT, function(win)
+-- vis.events.subscribe(vis.events.WIN_HIGHLIGHT, function(win)
+local win_highlight_subscribe = function(win)
 	if not spellcheck.check_full_viewport[win] or not win:style_define(42, spellcheck.typo_style) then
 		return false
 	end
@@ -171,7 +173,7 @@ vis.events.subscribe(vis.events.WIN_HIGHLIGHT, function(win)
 	last_viewport = viewport_text
 	last_typos = typos
 	return true
-end)
+end
 
 local wrapped_lex_funcs = {}
 
@@ -334,15 +336,15 @@ vis:map(vis.modes.NORMAL, "<C-w>w", function(keys)
 	local answer_line = so:match(".-\n(.-)\n.*")
 	local first_char = answer_line:sub(0,1)
 	if first_char == "*" then
-		vis:info(file:content(range).." is correctly spelled")
+		print(file:content(range).." is correctly spelled")
 		return true
 	elseif first_char == "#" then
-		vis:info("No corrections available for "..file:content(range))
+		print("No corrections available for "..file:content(range))
 		return false
 	elseif first_char == "&" then
 		suggestions = answer_line:match("& %S+ %d+ %d+: (.*)")
 	else
-		vis:info("Unknown answer: "..answer_line)
+		print("Unknown answer: "..answer_line)
 		return false
 	end
 
@@ -389,14 +391,14 @@ vis:map(vis.modes.NORMAL, "<C-w>i", function(keys)
 	return 0
 end, "Ignore misspelled word")
 
-vis:option_register("spelllang", "string", function(value, toggle)
-	spellcheck.lang = value
-	vis:info("Spellchecking language is now "..value)
-	-- force new highlight for full viewport
-	last_viewport = nil
-	-- force new highlight for syntax aware
-	last_data = nil
-	return true
-end, "The language used for spellchecking")
+local spelllang_register = function(value, toggle)
+    spellcheck.lang = value
+    print("Spellchecking language is now "..value)
+    -- force new highlight for full viewport
+    last_viewport = nil
+    -- force new highlight for syntax aware
+    last_data = nil
+    return true
+end
 
 return spellcheck
