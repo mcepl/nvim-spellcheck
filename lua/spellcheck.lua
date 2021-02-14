@@ -2,6 +2,10 @@
 -- Copyright (c) 2021 Matěj Cepl. All rights reserved.
 -- Use of this source code is governed by a MIT license found in the LICENSE file.
 
+-- Resources
+-- https://teukka.tech/luanvim.html
+-- https://github.com/nanotee/nvim-lua-guide
+
 local spellcheck = {}
 spellcheck.lang = os.getenv("LANG"):sub(0,5) or "en_US"
 local supress_stdout = " >/dev/null"
