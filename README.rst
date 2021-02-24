@@ -10,10 +10,12 @@ A spellchecking lua plugin for the `vis editor
 Installation
 ------------
 
-1. Download ``spellcheck.lua`` or clone this repository into your plugin
-   directory
-2. Load the plugin in your ``visrc.lua`` with
-   ``require(plugins/vis-spellcheck)``
+Install as any other vim plugin, requires plenary.nvim_ as a
+dependency.
+
+.. _plenary.nvim:
+    https://github.com/nvim-lua/plenary.nvim
+
 
 Usage
 -----

@@ -6,23 +6,30 @@
 -- https://teukka.tech/luanvim.html
 -- https://github.com/nanotee/nvim-lua-guide
 
+local Job = require('job')
+
 local spellcheck = {}
 spellcheck.lang = os.getenv("LANG"):sub(0,5) or "en_US"
 local supress_stdout = " >/dev/null"
 local supress_stderr = " 2>/dev/null"
 local supress_output = supress_stdout .. supress_stderr
+-- Every command expects ISO language code as the additional argument
 if os.execute("type enchant"..supress_output) then
-	spellcheck.cmd = "enchant -d %s -a"
-	spellcheck.list_cmd = "enchant -l -d %s"
+    spellcheck.cmd = "enchant"
+    spellcheck.args = {"-a", "-d"} 
+    spellcheck.list_args = {"-l", "-d"} 
 elseif os.execute("type enchant-2"..supress_output) then
-	spellcheck.cmd = "enchant-2 -d %s -a"
-	spellcheck.list_cmd = "enchant-2 -l -d %s"
+    spellcheck.cmd = "enchant-2"
+    spellcheck.args = {"-a", "-d"} 
+    spellcheck.list_args = {"-l", "-d"} 
 elseif os.execute("type aspell"..supress_output) then
-	spellcheck.cmd = "aspell pipe -l %s"
-	spellcheck.list_cmd = "aspell list -l %s"
+    spellcheck.cmd = "aspell"
+    spellcheck.args = {"pipe", "-l"} 
+    spellcheck.list_args = {"list", "-l"} 
 elseif os.execute("type hunspell"..supress_output) then
-	spellcheck.cmd = "hunspell -d %s"
-	spellcheck.list_cmd = "hunspell -l -d %s"
+    spellcheck.cmd = "hunspell"
+    spellcheck.args = {"-d"} 
+    spellcheck.list_args = {"-l", "-d"} 
 else
    return nil
 end
@@ -44,35 +51,31 @@ spellcheck.disable_syntax_awareness = false
 -- to a temporary file. See http://lua-users.org/lists/lua-l/2007-10/msg00189.html.
 -- The returned string consists of each misspell followed by a newline.
 local function get_typos(range_or_text)
-	local cmd = spellcheck.list_cmd:format(spellcheck.lang)
+        local cmd_args = spellcheck.list_args
+        table.insert(cmd_args, spellcheck.lang)
 	local typos = nil
-	if type(range_or_text) == "string" then
-		local text = range_or_text
-		local tmp_name = os.tmpname()
-		local full_cmd = cmd .. "> " .. tmp_name .. supress_stderr
-		local proc = assert(io.popen(full_cmd, "w"))
-		proc:write(text)
-		-- this error detection may need lua5.2
-		local success, reason, exit_code = proc:close()
-		if not success then
-			print("calling " .. cmd .. " failed ("..exit_code..")")
-			return nil
-		end
+        local j = Job:new({
+            command = spellcheck.cmd,
+            args = cmd_args,
+            on_exit = function(j, return_val)
+                print(return_val)
+                print(j:result())
+            end,
+        }):start()
+        if type(range_or_text) == "string" then
+            j:send(range_or_text)
+        else
+            local range = range_or_text
+            j:send(data)
+        end
+        j:join()
+        -- local ret, so, se = vis:pipe(vis.win.file, range, cmd)
 
-		local tmp_file = assert(io.open(tmp_name, "r"))
-		typos = tmp_file:read("*a")
-		tmp_file:close()
-		os.remove(tmp_name)
-	else
-		local range = range_or_text
-		local ret, so, se = vis:pipe(vis.win.file, range, cmd)
-
-		if ret ~= 0 then
-			print("calling " .. cmd .. " failed ("..ret..")")
-			return nil
-		end
-		typos = so
-	end
+        if ret ~= 0 then
+                print("calling " .. cmd .. " failed ("..ret..")")
+                return nil
+        end
+        typos = so
 
 	return typos
 end
