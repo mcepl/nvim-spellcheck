@@ -1,3 +1,5 @@
+# **THIS PROJECT IS DEAD, USE https://github.com/lewis6991/spellsitter.nvim INSTEAD!!!**
+
 # vis-spellcheck
 
 A spellchecking lua plugin for the [vis editor](https://github.com/martanne/vis).
